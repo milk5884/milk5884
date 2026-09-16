@@ -1,0 +1,21 @@
+name: w-c1-market-export
+on:
+  push:
+    paths:
+      - 'scripts/w_c1_market_export.py'
+      - '.github/workflows/w-c1-market-export.yml'
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch public BoatRace OD3 and payouts
+        run: python scripts/w_c1_market_export.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w-c1-market-20260719-20260908
+          path: out/
+          retention-days: 1
