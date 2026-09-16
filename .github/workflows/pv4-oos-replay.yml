@@ -13,19 +13,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: research/pv4-oos-replay
-      - name: Run buying strategy exploration
-        run: python explore.py | tee explore.log
-      - name: Save exploration results
+      - name: Run targeted strategy verification
+        run: python verify_market.py | tee verify.log
+      - name: Save verification results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add explore_summary.json explore_all.csv explore.log
-          git commit -m "P-V4 buying strategy exploration results" || exit 0
+          git add verify_summary.json verify.log
+          git commit -m "P-V4 strategy verification results" || exit 0
           git push origin HEAD:research/pv4-oos-replay
       - uses: actions/upload-artifact@v4
         with:
-          name: pv4-buying-strategy-results
+          name: pv4-strategy-verification
           path: |
-            explore_summary.json
-            explore_all.csv
-            explore.log
+            verify_summary.json
+            verify.log
