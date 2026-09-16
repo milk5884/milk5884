@@ -1,0 +1,64 @@
+name: Reverse-H Full History 20260917 v2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/reverse-h-full-history-20260917-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout runner repo
+        uses: actions/checkout@v4
+
+      - name: Checkout final odds history
+        uses: actions/checkout@v4
+        with:
+          repository: lamrongol/BoatraceOdds
+          ref: gh-pages
+          path: _odds
+          fetch-depth: 1
+
+      - name: Checkout result history
+        uses: actions/checkout@v4
+        with:
+          repository: lamrongol/BoatraceResults
+          ref: gh-pages
+          path: _results
+          fetch-depth: 1
+
+      - name: Install Python dependency
+        run: python -m pip install --quiet numpy
+
+      - name: Apply serialization-only patch
+        run: |
+          sed -i "/gate={'roi_ge_120'/a\\    gate={k:bool(v) for k,v in gate.items()}" scripts/reverse_h_full_history_20260917.py
+
+      - name: Run frozen Reverse-H full-history backtest
+        run: |
+          python scripts/reverse_h_full_history_20260917.py \
+            --odds-root _odds \
+            --results-root _results \
+            --end-date 2026-09-15 \
+            --out REVERSE_H_FULL_HISTORY_RESULT.json
+
+      - name: Upload research result
+        uses: actions/upload-artifact@v4
+        with:
+          name: reverse-h-full-history-20260917-v2
+          path: |
+            REVERSE_H_FULL_HISTORY_RESULT.json
+            REVERSE_H_FULL_HISTORY_RESULT.md
+
+      - name: Commit research result
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add REVERSE_H_FULL_HISTORY_RESULT.json REVERSE_H_FULL_HISTORY_RESULT.md
+          git diff --cached --quiet || git commit -m 'research(Reverse-H): freeze full-history result'
+          git push
