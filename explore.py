@@ -1,9 +1,10 @@
-import base64,csv,gzip,io,json,math,urllib.request,itertools
+import base64,csv,gzip,io,json,math,urllib.request,itertools,hashlib
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent
-b64=''.join((ROOT/f'oos_chunk_{i:02d}').read_text().strip() for i in range(8))
+b64=''.join(p.read_text().strip() for p in sorted(ROOT.glob('oos.part*')))
+assert hashlib.sha256(b64.encode()).hexdigest()=='762a8349237ec8ab2b44c38bfa8591505e5f7e306ef6acc181a64ee4c6002b72'
 rows=json.loads(gzip.decompress(base64.b64decode(b64)))
 by_date=defaultdict(list)
 for r in rows: by_date[r[1]].append(r)
