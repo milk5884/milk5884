@@ -18,11 +18,16 @@ for day in range(9, 16):
         'race_card': f'data/programs/race_cards/{yyyy}/{mm}/{dd}.csv',
         'result': f'data/results/realtime/{yyyy}/{mm}/{dd}.csv',
         'payout': f'data/results/payouts/{yyyy}/{mm}/{dd}.csv',
+        'od3': f'data/previews/od3/{yyyy}/{mm}/{dd}.csv',
     }
     for kind, rel in sources.items():
         url = f'{BASE}/{rel}'
-        with urllib.request.urlopen(url, timeout=30) as r:
-            data = r.read()
+        try:
+            with urllib.request.urlopen(url, timeout=30) as r:
+                data = r.read()
+        except Exception as exc:
+            manifest.append({'date': date, 'kind': kind, 'url': url, 'error': repr(exc)})
+            continue
         path = OUT / f'{kind}_{date}.csv'
         path.write_bytes(data)
         manifest.append({
@@ -34,4 +39,4 @@ for day in range(9, 16):
         })
 
 (OUT / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
-print(json.dumps({'files': len(manifest), 'bytes': sum(x['bytes'] for x in manifest)}))
+print(json.dumps({'records': len(manifest), 'files': sum('bytes' in x for x in manifest), 'bytes': sum(x.get('bytes',0) for x in manifest)}))
