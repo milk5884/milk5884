@@ -1,10 +1,12 @@
-import base64,csv,gzip,io,json,math,urllib.request
+import base64,csv,gzip,io,json,math,urllib.request,hashlib
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parent
-rows=json.loads(gzip.decompress(base64.b64decode((ROOT/'oos_compact.b64').read_text().strip())))
+packed=''.join(p.read_text().strip() for p in sorted(ROOT.glob('oos.part*')))
+assert hashlib.sha256(packed.encode()).hexdigest()=='762a8349237ec8ab2b44c38bfa8591505e5f7e306ef6acc181a64ee4c6002b72'
+rows=json.loads(gzip.decompress(base64.b64decode(packed)))
 # row: race_code,date,split,result,payout100,p_iwc,p_outer_follow,p_outer_head,p_outer_pair_top3, [[rank,combination,ordering_score],...]
 by_date=defaultdict(list)
 for r in rows: by_date[r[1]].append(r)
