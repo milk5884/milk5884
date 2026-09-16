@@ -22,17 +22,30 @@ for date,races in sorted(by_date.items()):
     for x in csv.DictReader(io.StringIO(text)):
         rc=x.get('レースコード','')
         if rc not in want:continue
-        vals={c:float(x['3連単_'+c]) for c in combos}
-        acq=datetime.fromisoformat(x['取得日時']);ddl=datetime.fromisoformat(x['レース日']+'T'+x['締切時刻']+':00+09:00')
-        market[rc]={'odds':vals,'lead':(ddl-acq).total_seconds()/60}
+        vals={};complete=True
+        for c in combos:
+            raw=x.get('3連単_'+c,'')
+            try:
+                q=float(raw)
+                if not math.isfinite(q) or q<0:complete=False
+                vals[c]=q
+            except:
+                complete=False
+                break
+        if not complete:continue
+        try:
+            acq=datetime.fromisoformat(x['取得日時']);ddl=datetime.fromisoformat(x['レース日']+'T'+x['締切時刻']+':00+09:00');lead=(ddl-acq).total_seconds()/60
+        except:continue
+        if lead<=0:continue
+        market[rc]={'odds':vals,'lead':lead}
 all_tickets=[]
 for r in rows:
     rc,date,split,result,payout=r[:5];mk=market.get(rc)
     for rank,comb,score in r[9]:
         b={'race_code':rc,'date':date,'rank':rank,'comb':comb,'hit':comb==result,'payout':payout if comb==result else 0}
-        if mk and mk['lead']>0:
+        if mk:
             o=mk['odds'].get(comb)
-            if o>0:
+            if o is not None and o>0:
                 p=prob(rank,score,r); b.update({'odds':o,'p':p,'ev':p*o})
         all_tickets.append(b)
 
@@ -88,6 +101,6 @@ strategies={
  'M_rank10_odds50_200_evle4':marketf({10},50,200,4),
  'M_rank4_7_10_odds50_200_evle5':marketf({4,7,10},50,200,5),
 }
-out={k:report(v) for k,v in strategies.items()}
+out={'market_complete_races':len(market),'strategies':{k:report(v) for k,v in strategies.items()}}
 (ROOT/'verify_summary.json').write_text(json.dumps(out,ensure_ascii=False,indent=2))
 print(json.dumps(out,ensure_ascii=False,indent=2))
